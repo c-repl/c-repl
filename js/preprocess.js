@@ -3,10 +3,14 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.splitStatements = exports.pretty = exports.cpp = void 0;
+exports.splitStatements = exports.pretty = exports.cpp = exports.preProcess = void 0;
 const execa_1 = __importDefault(require("execa"));
+async function preProcess(code) {
+    return (await splitStatements(await cpp(await pretty(code)))).statements.join('\n');
+}
+exports.preProcess = preProcess;
 async function cpp(code) {
-    var e = execa_1.default("cpp");
+    var e = execa_1.default("cpp", ["-P"]);
     await e.stdin?.write(code);
     await e.stdin?.end();
     return (await e).stdout;
@@ -79,10 +83,10 @@ function splitStatements(s) {
     var declarations = [];
     var conditionalCount = 0;
     var result = [];
-    var pack = (i, t) => `void __method__${i}(){${t}}`;
+    var pack = (i, t) => `void __method__${i}(){${t}}; __method__${i}();`;
     for (var i = 0; i < statements.length; i++) {
         var decl = null;
-        if (statements[i].search(/^if/) > -1) {
+        if (statements[i].search(/^if/) > -1) { //if
             if (statements[i + 1]?.search(/^else/) > -1) {
                 result.push(statements[i]);
             }
@@ -98,13 +102,27 @@ function splitStatements(s) {
                 result.push(pack(conditionalCount++, result.pop() + statements[i]));
             }
         }
+        else if (statements[i].search(/^try/) > -1) { //try-catch
+            if (statements[i + 1]?.search(/^catch/) > -1) {
+                result.push(statements[i]);
+            }
+            else {
+                result.push(pack(conditionalCount++, statements[i]));
+            }
+        }
+        else if (statements[i].search(/^catch/) > -1) {
+            if (statements[i + 1]?.search(/^catch/) > -1) {
+                result.push(result.pop() + statements[i]);
+            }
+            else {
+                result.push(pack(conditionalCount++, result.pop() + statements[i]));
+            }
+        }
         else if (statements[i].search(/^for[ ]?\(/) > -1 || statements[i].search(/^while[ ]?\(/) > -1 || statements[i].search(/do[ ]?\{/) > -1) {
             result.push(pack(conditionalCount++, statements[i]));
         }
-        else if (decl = parseDeclaration(statements[i])) {
-            declarations.push(decl);
+        else
             result.push(statements[i]);
-        }
     }
     // function treatDangledElse(s: ReturnType<typeof splitStatements>["statements"]) {
     //     var result: typeof s = []

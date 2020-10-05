@@ -1,6 +1,7 @@
 import { TalkToGdb } from "talk-to-gdb"
 import { EventEmitterExtended, pattern } from "listen-for-patterns"
-import { cExpression, sourceCode, codetoso, makeExecObject, codetoo, soFile, aFile, Nominal, oFile } from "./compiler"
+import { cExpression, sourceCode, codetoso, makeExecObject, codetoo, soFile, aFile, Nominal, oFile, sFile } from "./compiler"
+import { preProcess } from "./preprocess"
 type CompilationSource = sourceCode | { text: string, lib?: string[] }
 type baseFile = Nominal<aFile | CompilationSource | oFile, "baseFile">
 type path = Nominal<string, "path">
@@ -49,14 +50,14 @@ export class CRepl extends EventEmitterExtended {
         this.secondary = undefined
         this.initialized = false
     }
-    async compile(code: CompilationSource, target: (aFile | oFile | soFile)["type"] = "afile") {
+    async compile(code: CompilationSource, pp = false, target: (aFile | oFile | soFile)["type"] = "afile") {
         if (typeof code != 'string') {
             var lib = "lib" in code ? code.lib : [];
             code = "text" in code ? code.text : code;
         }
-        if (target == 'ofile') return codetoo(code)
-        else if (target == 'sofile') return codetoso(code)
-        else if (target == 'afile') return makeExecObject([await codetoo(code)], lib)
+        if (target == 'ofile') return codetoo(code, pp)
+        else if (target == 'sofile') return codetoso(code, pp)
+        else if (target == 'afile') return makeExecObject([await codetoo(code, pp)], lib)
         else throw "illegal compilation target"
     }
     loadso(file: path) {
@@ -102,7 +103,7 @@ export class CRepl extends EventEmitterExtended {
         /** */
         if (code.search(";") == -1) return this.evaluate(code as cExpression)
         else {
-            var so = await this.compile(code as sourceCode, "sofile");
+            var so = await this.compile(await preProcess(code as sourceCode), false, "sofile");
             return this.loadso(so.name)
         }
     }

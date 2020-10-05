@@ -1,6 +1,6 @@
 import { TalkToGdb } from "talk-to-gdb";
 import { EventEmitterExtended } from "listen-for-patterns";
-import { cExpression, sourceCode, soFile, aFile, Nominal, oFile } from "./compiler";
+import { cExpression, sourceCode, soFile, aFile, Nominal, oFile, sFile } from "./compiler";
 declare type CompilationSource = sourceCode | {
     text: string;
     lib?: string[];
@@ -18,11 +18,11 @@ export declare class CRepl extends EventEmitterExtended {
     private defaultBaseCode;
     private init;
     constructor(file?: baseFile);
-    compile(code: CompilationSource, target?: (aFile | oFile | soFile)["type"]): Promise<{
+    compile(code: CompilationSource, pp?: boolean, target?: (aFile | oFile | soFile)["type"]): Promise<{
         id: string;
         extension: string;
         name: string;
-        src: import("./compiler").sFile;
+        src: sFile;
         type: "ofile";
         _gcc_result: import("execa").ExecaReturnValue<string>;
         time: number;

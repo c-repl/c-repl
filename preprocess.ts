@@ -1,8 +1,11 @@
 import execa from "execa";
 import { Nominal } from "talk-to-gdb";
 import { sourceCode } from "./compiler";
+export async function preProcess(code: sourceCode) {
+    return (await splitStatements(await cpp(await pretty(code)))).statements.join('\n')
+}
 export async function cpp(code: sourceCode) {
-    var e = execa("cpp")
+    var e = execa("cpp", ["-P"])
     await e.stdin?.write(code)
     await e.stdin?.end();
     return (await e).stdout
@@ -67,10 +70,10 @@ export function splitStatements(s: sourceCode) {
     var declarations: ReturnType<typeof parseDeclaration>[] = []
     var conditionalCount = 0;
     var result: (string | { i: number, statement: string })[] = []
-    var pack = (i: number, t: string) => `void __method__${i}(){${t}}`
+    var pack = (i: number, t: string) => `void __method__${i}(){${t}}; __method__${i}();`
     for (var i = 0; i < statements.length; i++) {
         var decl: ReturnType<typeof parseDeclaration> = null;
-        if (statements[i].search(/^if/) > -1) {
+        if (statements[i].search(/^if/) > -1) {//if
             if (statements[i + 1]?.search(/^else/) > -1) {
                 result.push(statements[i])
             }
@@ -85,13 +88,25 @@ export function splitStatements(s: sourceCode) {
                 result.push(pack(conditionalCount++, result.pop() + statements[i]))
             }
         }
+        else if (statements[i].search(/^try/) > -1) {//try-catch
+            if (statements[i + 1]?.search(/^catch/) > -1) {
+                result.push(statements[i])
+            }
+            else {
+                result.push(pack(conditionalCount++, statements[i]))
+            }
+        } else if (statements[i].search(/^catch/) > -1) {
+            if (statements[i + 1]?.search(/^catch/) > -1) {
+                result.push(result.pop() + statements[i])
+            }
+            else {
+                result.push(pack(conditionalCount++, result.pop() + statements[i]))
+            }
+        }
         else if (statements[i].search(/^for[ ]?\(/) > -1 || statements[i].search(/^while[ ]?\(/) > -1 || statements[i].search(/do[ ]?\{/) > -1) {
             result.push(pack(conditionalCount++, statements[i]))
         }
-        else if (decl = parseDeclaration(statements[i])) {
-            declarations.push(decl);
-            result.push(statements[i])
-        }
+        else result.push(statements[i])
 
     }
     // function treatDangledElse(s: ReturnType<typeof splitStatements>["statements"]) {

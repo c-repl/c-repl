@@ -46,7 +46,7 @@ export declare function makeSharedObject(ofile: oFile, extension?: string): Prom
     _gcc_result: e.ExecaReturnValue<string>;
     time: number;
 }>;
-export declare function codetoo(textSrc: sourceCode): Promise<{
+export declare function codetoo(textSrc: sourceCode, pp?: boolean): Promise<{
     id: string;
     extension: string;
     name: string;
@@ -55,7 +55,7 @@ export declare function codetoo(textSrc: sourceCode): Promise<{
     _gcc_result: e.ExecaReturnValue<string>;
     time: number;
 }>;
-export declare function codetoso(textSrc: sourceCode): Promise<{
+export declare function codetoso(textSrc: sourceCode, pp?: boolean): Promise<{
     id: string;
     extension: string;
     name: string;

@@ -4,6 +4,7 @@ exports.evaluate = exports.CRepl = exports.GdbParser = void 0;
 const talk_to_gdb_1 = require("talk-to-gdb");
 const listen_for_patterns_1 = require("listen-for-patterns");
 const compiler_1 = require("./compiler");
+const preprocess_1 = require("./preprocess");
 const gdb_parser_extended_1 = require("gdb-parser-extended");
 Object.defineProperty(exports, "GdbParser", { enumerable: true, get: function () { return gdb_parser_extended_1.GdbParser; } });
 class CRepl extends listen_for_patterns_1.EventEmitterExtended {
@@ -48,17 +49,17 @@ class CRepl extends listen_for_patterns_1.EventEmitterExtended {
             throw { e, message: "Error in initializing Cli" };
         }
     }
-    async compile(code, target = "afile") {
+    async compile(code, pp = false, target = "afile") {
         if (typeof code != 'string') {
             var lib = "lib" in code ? code.lib : [];
             code = "text" in code ? code.text : code;
         }
         if (target == 'ofile')
-            return compiler_1.codetoo(code);
+            return compiler_1.codetoo(code, pp);
         else if (target == 'sofile')
-            return compiler_1.codetoso(code);
+            return compiler_1.codetoso(code, pp);
         else if (target == 'afile')
-            return compiler_1.makeExecObject([await compiler_1.codetoo(code)], lib);
+            return compiler_1.makeExecObject([await compiler_1.codetoo(code, pp)], lib);
         else
             throw "illegal compilation target";
     }
@@ -100,7 +101,7 @@ class CRepl extends listen_for_patterns_1.EventEmitterExtended {
         if (code.search(";") == -1)
             return this.evaluate(code);
         else {
-            var so = await this.compile(code, "sofile");
+            var so = await this.compile(await preprocess_1.preProcess(code), false, "sofile");
             return this.loadso(so.name);
         }
     }

@@ -87,13 +87,13 @@ async function makeSharedObject(ofile, extension = "so") {
     };
 }
 exports.makeSharedObject = makeSharedObject;
-async function codetoo(textSrc) {
-    var s = await makeSourceFile(textSrc);
+async function codetoo(textSrc, pp = true) {
+    var s = await makeSourceFile(textSrc, pp ? "c" : "i");
     return makeObjectFile(s);
 }
 exports.codetoo = codetoo;
-async function codetoso(textSrc) {
-    var o = await codetoo(textSrc);
+async function codetoso(textSrc, pp = true) {
+    var o = await codetoo(textSrc, pp);
     var so = await makeSharedObject(o);
     return so;
 }
