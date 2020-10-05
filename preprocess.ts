@@ -1,74 +1,13 @@
-function groups(state: { cursor: number, eaten: number, string: string, lastCurlClosed: number }) {
-    var { cursor, eaten, string } = state;
-    var braces = "(){}[]";
-    var matchedbracket = braces.indexOf(string[cursor])
-    if (string[cursor] in ["(", "{", "["]) {
-        var stack: string[] = [];
-        var matchedAt;
-        for (; ((matchedAt = braces.indexOf(string[cursor])) - matchedbracket !== 1) && cursor < string.length; cursor++) {
-            if (matchedAt == -1) continue;
-            else if (matchedAt % 2 == 0) {//means open braces
-                stack.push(string[cursor])
-            }
-            else if (stack.length > 0) {
-                var pairBracket = braces.indexOf(stack.pop() as string);
-                if (matchedAt - pairBracket !== 1) throw "bracket mismatch at " + cursor;
-                else if (string[cursor] == "}" && stack.length == 0) state.lastCurlClosed = cursor;;
-            } else throw "unexpected closing bracket at " + cursor;
-            if (stack.length == 0)//all pair matched
-                break
-            cursor += 1
-        }
-        if (!stack.length)//unmatched pairs
-            throw "bracket mismatch at " + cursor;
-        else {
-            var start = state.cursor;
-            state.cursor = cursor;
-            return { type: "group", bracket: string[start], range: { start, end: cursor } }
-        }
-
-    }
-    return null
+import execa from "execa";
+import { Nominal } from "talk-to-gdb";
+import { sourceCode } from "./compiler";
+export async function cpp(code: sourceCode) {
+    var e = execa("cpp")
+    await e.stdin?.write(code)
+    await e.stdin?.end();
+    return (await e).stdout
 }
-function statement(state/*** state */: { cursor: number, eaten: number, string: string }) {
-    var { cursor, eaten, string } = state;
-    if (string[cursor] == ';') {
-        state.cursor++;
-        state.eaten = cursor + 1;
-        return { type: "Single Line Comment", text: string.slice(eaten, cursor + 1), range: { start: eaten, end: cursor } }
-    }
-    else return null;
-}
-function comments(state/*** state */: { i: number, s: string }, cb: { (result: { type: string, text: string, range: { start: number, end: number } }): any }) {
-    var { i, s } = state;
-    if (s[i] == '/' && s[i + 1] == '*') {
-        var def = ''
-        while (!(s[i] == '*' && s[i + 1] == '/')) def += s[i++];
-        def += '*/'
-        i += 1;
-        var start = state.i;
-        state.i = i;
-        return cb({ type: "Single Line Comment", text: def.trim(), range: { start, end: i } })
-    }
-    else if (s[i] == '/' && s[i + 1] == '*') {
-        var def = ''
-        while (!(s[i] == '*' && s[i + 1] == '/')) def += s[i++];
-        def += '*/'
-        i += 1;
-        var start = state.i;
-        state.i = i;
-        return cb({ type: "MultiLine  Comment", text: def.trim(), range: { start, end: i } })
-    }
-    else if (s[i] == '#') {
-        var def = ''
-        while (s[i] != '\n')
-            def += s[i++];
-        var start = state.i;
-        state.i = i;
-        return cb({ type: "Preprocessor  Comment", text: def.trim(), range: { start, end: i } })
-    }
-}
-export function SplitStatements(s: string) {
+export function splitStatements(s: sourceCode) {
     var stack: string[] = [];
     var statements: string[] = [];
     var finishedtill = 0;
@@ -182,4 +121,67 @@ export function SplitStatements(s: string) {
     //         return result
     //     }
     return { conditionalCount, statements: result, declarations }
+}
+// function extractinit(s) {
+//     if (!s.endsWith(';')) return null;
+//     else {
+//         var feq = undefined;
+//         var stack = []
+//         var braces = "(){}[]";
+//         for (var i = 0; i < s.length; i++) {
+//             if (stack.length == 0 && s[i] == '=') {
+//                 feq = i;
+//                 break
+//             }
+//             else {
+//                 var sym = braces.indexOf(s[i]);
+//                 if (sym == -1) continue;
+//                 else if (sym % 2 == 0) {//means open braces
+//                     stack.push(s[i])
+//                 }
+//                 else {
+//                     var pairsym = braces.indexOf(stack.pop());
+//                     if (sym - pairsym !== 1) throw "bracket mismatch at " + i;
+//                     else if (s[i] == "}" && stack.length == 0) lastcurleddat = i;
+//                 }
+//             }
+//         }
+//         //if(stack.length!=0)throw "bracket mismatch at "+i;
+//         if (i == s.length) return null
+//         else {
+//             var name = s.slice(0, feq).split(" ").pop()//or use regex
+//             return { name, def: s.slice(feq + 1) }
+//         }
+//     }
+//     return feq
+// }
+function parseDeclaration(s: Nominal<string, "declaration+assignment">) {
+
+    var indexOfEq = s.length;
+    var stack: string[] = []
+    var braces = "(){}[]";
+    for (var i = 0; i < s.length; i++) {
+        if (stack.length == 0 && s[i] == '=' && s[i - 1] == " " && s[i + 1] == " ") {
+            indexOfEq = i;
+            break
+        }
+        else {
+            var matchedAt = braces.indexOf(s[i]);
+            if (matchedAt == -1) continue;
+            else if (matchedAt % 2 == 0) {//means open braces
+                stack.push(s[i])
+            }
+            else if (stack.length > 0) { //or closing bracket
+                var pairsym = braces.indexOf(stack.pop() as string);
+                if (matchedAt - pairsym !== 1) throw "bracket mismatch at " + i;
+            }
+            else throw "inconsitancy in bracket pairs at " + i
+        }
+    }
+    if (i == s.length) return null
+    else {
+        var declaration = s.slice(0, indexOfEq).trim()
+        var name = declaration.split(" ").pop() as string//or use regex
+        return { name, value: s.slice(indexOfEq + 1).trim(), declaration }
+    }
 }
