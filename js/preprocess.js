@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.splitStatements = exports.cpp = void 0;
+exports.splitStatements = exports.pretty = exports.cpp = void 0;
 const execa_1 = __importDefault(require("execa"));
 async function cpp(code) {
     var e = execa_1.default("cpp");
@@ -12,6 +12,13 @@ async function cpp(code) {
     return (await e).stdout;
 }
 exports.cpp = cpp;
+async function pretty(code) {
+    var e = execa_1.default("clang-format");
+    await e.stdin?.write(code);
+    await e.stdin?.end();
+    return (await e).stdout;
+}
+exports.pretty = pretty;
 function splitStatements(s) {
     var stack = [];
     var statements = [];
@@ -172,7 +179,7 @@ function parseDeclaration(s) {
     var stack = [];
     var braces = "(){}[]";
     for (var i = 0; i < s.length; i++) {
-        if (stack.length == 0 && s[i] == '=') {
+        if (stack.length == 0 && s[i] == '=' && s[i - 1] == " " && s[i + 1] == " ") {
             indexOfEq = i;
             break;
         }

@@ -7,6 +7,12 @@ export async function cpp(code: sourceCode) {
     await e.stdin?.end();
     return (await e).stdout
 }
+export async function pretty(code: sourceCode) {
+    var e = execa("clang-format")
+    await e.stdin?.write(code)
+    await e.stdin?.end();
+    return (await e).stdout
+}
 export function splitStatements(s: sourceCode) {
     var stack: string[] = [];
     var statements: string[] = [];
