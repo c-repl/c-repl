@@ -1,9 +1,11 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.evaluate = exports.CRepl = void 0;
+exports.evaluate = exports.CRepl = exports.GdbParser = void 0;
 const talk_to_gdb_1 = require("talk-to-gdb");
 const listen_for_patterns_1 = require("listen-for-patterns");
 const compiler_1 = require("./compiler");
+const gdb_parser_extended_1 = require("gdb-parser-extended");
+Object.defineProperty(exports, "GdbParser", { enumerable: true, get: function () { return gdb_parser_extended_1.GdbParser; } });
 class CRepl extends listen_for_patterns_1.EventEmitterExtended {
     constructor(file) {
         super();
@@ -76,6 +78,11 @@ class CRepl extends listen_for_patterns_1.EventEmitterExtended {
         return this.evaluate("", command, "output");
     }
     getAttrib(file) {
+    }
+    async evaluateCommand(arg, ...args) {
+        var token = await this.primary?.command(arg, ...args);
+        if (typeof token == "number")
+            return this.primary?.readPattern({ token, type: 'sequence' });
     }
     async run(code) {
         /**

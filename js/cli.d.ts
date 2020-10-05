@@ -7,6 +7,8 @@ declare type CompilationSource = sourceCode | {
 };
 declare type baseFile = Nominal<aFile | CompilationSource | oFile, "baseFile">;
 declare type path = Nominal<string, "path">;
+import { GdbParser } from "gdb-parser-extended";
+export { GdbParser };
 export declare class CRepl extends EventEmitterExtended {
     #private;
     initialized: boolean;
@@ -18,6 +20,7 @@ export declare class CRepl extends EventEmitterExtended {
     constructor(file?: baseFile);
     compile(code: CompilationSource, target?: (aFile | oFile | soFile)["type"]): Promise<{
         id: string;
+        extension: string;
         name: string;
         src: import("./compiler").sFile;
         type: "ofile";
@@ -25,6 +28,7 @@ export declare class CRepl extends EventEmitterExtended {
         time: number;
     } | {
         id: string;
+        extension: string;
         name: string;
         src: oFile;
         type: "sofile";
@@ -32,6 +36,7 @@ export declare class CRepl extends EventEmitterExtended {
         time: number;
     } | {
         id: string;
+        extension: string;
         name: string;
         src: (oFile | soFile)[];
         type: "afile";
@@ -46,11 +51,11 @@ export declare class CRepl extends EventEmitterExtended {
     commandConsole(command: string): Promise<AsyncIterable<Object>>;
     commandMi(command: string): Promise<AsyncIterable<Object>>;
     getAttrib(file: soFile | aFile): void;
+    evaluateCommand(arg: string, ...args: string[]): Promise<any>;
     run(code: sourceCode): ReturnType<CRepl["compile"]>;
     run(code: cExpression): ReturnType<CRepl["evaluate"]>;
 }
 export declare function evaluate(o: CRepl, code: cExpression, command?: string, get?: ("resultonly" | "output")): Promise<void>;
-export {};
 /**
 1-break-insert main
 2-exec-run

@@ -4,6 +4,8 @@ import { cExpression, sourceCode, codetoso, makeExecObject, codetoo, soFile, aFi
 type CompilationSource = sourceCode | { text: string, lib?: string[] }
 type baseFile = Nominal<aFile | CompilationSource | oFile, "baseFile">
 type path = Nominal<string, "path">
+import { GdbParser } from "gdb-parser-extended";
+export { GdbParser }
 export class CRepl extends EventEmitterExtended {
     initialized: boolean
     primary: TalkToGdb | undefined
@@ -77,6 +79,11 @@ export class CRepl extends EventEmitterExtended {
     }
     getAttrib(file: soFile | aFile) {
 
+    }
+    async evaluateCommand(arg: string, ...args: string[]) {
+        var token = await this.primary?.command(arg, ...args);
+        if (typeof token == "number")
+            return this.primary?.readPattern({ token, type: 'sequence' });
     }
     async run(code: sourceCode): ReturnType<CRepl["compile"]>
     async run(code: cExpression): ReturnType<CRepl["evaluate"]>

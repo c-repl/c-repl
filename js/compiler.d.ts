@@ -20,23 +20,26 @@ export interface soFile extends PromiseValue<ReturnType<typeof makeSharedObject>
 }
 export interface aFile extends PromiseValue<ReturnType<typeof makeExecObject>> {
 }
-export declare function makeSourceFile(textSrc: sourceCode): Promise<{
+export declare function makeSourceFile(textSrc: sourceCode, extension?: string): Promise<{
     id: string;
+    extension: string;
     name: string;
     type: "sfile";
     src: Nominal<string, "sourceCode">;
     time: number;
 }>;
-export declare function makeObjectFile(sfile: sFile): Promise<{
+export declare function makeObjectFile(sfile: sFile, extension?: string): Promise<{
     id: string;
+    extension: string;
     name: string;
     src: sFile;
     type: "ofile";
     _gcc_result: e.ExecaReturnValue<string>;
     time: number;
 }>;
-export declare function makeSharedObject(ofile: oFile): Promise<{
+export declare function makeSharedObject(ofile: oFile, extension?: string): Promise<{
     id: string;
+    extension: string;
     name: string;
     src: oFile;
     type: "sofile";
@@ -45,6 +48,7 @@ export declare function makeSharedObject(ofile: oFile): Promise<{
 }>;
 export declare function codetoo(textSrc: sourceCode): Promise<{
     id: string;
+    extension: string;
     name: string;
     src: sFile;
     type: "ofile";
@@ -53,14 +57,16 @@ export declare function codetoo(textSrc: sourceCode): Promise<{
 }>;
 export declare function codetoso(textSrc: sourceCode): Promise<{
     id: string;
+    extension: string;
     name: string;
     src: oFile;
     type: "sofile";
     _gcc_result: e.ExecaReturnValue<string>;
     time: number;
 }>;
-export declare function makeExecObject(files: (soFile | oFile)[], moreoptions?: string[]): Promise<{
+export declare function makeExecObject(files: (soFile | oFile)[], moreoptions?: string[], extension?: string): Promise<{
     id: string;
+    extension: string;
     name: string;
     src: (oFile | soFile)[];
     type: "afile";

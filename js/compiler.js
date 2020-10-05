@@ -31,11 +31,12 @@ const execa_1 = __importDefault(require("execa"));
 const tmpdir = tmp.dirSync();
 const md5sum = crypto_1.createHash('md5');
 const uoptions = ["-fno-eliminate-unused-debug-types", "-g3", "-O0", "-rdynamic"];
-async function makeSourceFile(textSrc) {
-    var file = tmp.fileSync({ dir: tmpdir.name, postfix: ".c" });
+async function makeSourceFile(textSrc, extension = "c") {
+    var file = tmp.fileSync({ dir: tmpdir.name, postfix: `.${extension}` });
     fs.writeFileSync(file.fd, textSrc);
     return {
         id: file.name.split(".")[0],
+        extension,
         name: file.name,
         type: "sfile",
         src: textSrc,
@@ -43,8 +44,8 @@ async function makeSourceFile(textSrc) {
     };
 }
 exports.makeSourceFile = makeSourceFile;
-async function makeObjectFile(sfile) {
-    var filename = sfile.id + ".o";
+async function makeObjectFile(sfile, extension = "o") {
+    var filename = sfile.id + `.${extension}`;
     var gccCompileOptions = [
         "-w",
         "-Wall",
@@ -60,6 +61,7 @@ async function makeObjectFile(sfile) {
         throw out.stderr;
     return {
         id: sfile.id,
+        extension,
         name: filename,
         src: sfile,
         type: "ofile",
@@ -68,14 +70,15 @@ async function makeObjectFile(sfile) {
     };
 }
 exports.makeObjectFile = makeObjectFile;
-async function makeSharedObject(ofile) {
-    var filename = ofile.id + ".so";
+async function makeSharedObject(ofile, extension = "so") {
+    var filename = ofile.id + `.${extension}`;
     var gccLinkerOptions = ["-w", "-shared", ...uoptions, ofile.name, "-o", filename, "-ldl"];
     var out = await execa_1.default("gcc", gccLinkerOptions);
     if (out.stderr)
         throw out.stderr;
     return {
         id: ofile.id,
+        extension,
         name: filename,
         src: ofile,
         type: "sofile",
@@ -95,16 +98,17 @@ async function codetoso(textSrc) {
     return so;
 }
 exports.codetoso = codetoso;
-async function makeExecObject(files, moreoptions = []) {
+async function makeExecObject(files, moreoptions = [], extension = "a") {
     var filenames = files.map(file => path.basename(file.name)).sort();
     var hash = md5sum.copy().update(filenames.join("")).digest('hex');
-    var filename = path.join(tmpdir.name, hash + ".a");
+    var filename = path.join(tmpdir.name, hash + `.${extension}`);
     var gccLinkerOptions = [`-Wl,-rpath=${tmpdir.name}`, ...uoptions, "-o", path.basename(filename)].concat(filenames).concat(moreoptions);
     var out = await execa_1.default("gcc", gccLinkerOptions, { cwd: tmpdir.name, env: { LD_LIBRARY_PATH: tmpdir.name } });
     if (out.stderr)
         throw out.stderr;
     return {
         id: hash,
+        extension,
         name: filename,
         src: files,
         type: "afile",
