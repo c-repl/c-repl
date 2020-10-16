@@ -47,7 +47,7 @@ export async function makeObjectFile(sfile: sFile, extension = "o") {
     "-o",
     filename
   ];
-  var out = await e("gcc", gccCompileOptions);
+  var out = await e("g++", gccCompileOptions);
   if (out.stderr) throw out.stderr
   return {
     id: sfile.id,
@@ -62,7 +62,7 @@ export async function makeObjectFile(sfile: sFile, extension = "o") {
 export async function makeSharedObject(ofile: oFile, extension = "so") {
   var filename = ofile.id + `.${extension}`;
   var gccLinkerOptions = ["-w", "-shared", ...uoptions, ofile.name, "-o", filename, "-ldl"];
-  var out = await e("gcc", gccLinkerOptions);
+  var out = await e("g++", gccLinkerOptions);
   if (out.stderr) throw out.stderr
   return {
     id: ofile.id,
@@ -89,7 +89,7 @@ export async function makeExecObject(files: (soFile | oFile)[], moreoptions: str
   var hash = md5sum.copy().update(filenames.join("")).digest('hex')
   var filename = path.join(tmpdir.name, hash + `.${extension}`);
   var gccLinkerOptions = [`-Wl,-rpath=${tmpdir.name}`, ...uoptions, "-o", path.basename(filename)].concat(filenames).concat(moreoptions);
-  var out = await e("gcc", gccLinkerOptions, { cwd: tmpdir.name, env: { LD_LIBRARY_PATH: tmpdir.name } });
+  var out = await e("g++", gccLinkerOptions, { cwd: tmpdir.name, env: { LD_LIBRARY_PATH: tmpdir.name } });
   if (out.stderr) throw out.stderr
   return {
     id: hash,

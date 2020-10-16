@@ -9,6 +9,9 @@ async function preProcess(code) {
     return (await splitStatements(await cpp(await pretty(code)))).statements.join('\n');
 }
 exports.preProcess = preProcess;
+// export async getMacros()
+// {
+// }
 async function cpp(code) {
     var e = execa_1.default("cpp", ["-P"]);
     await e.stdin?.write(code);
@@ -83,9 +86,8 @@ function splitStatements(s) {
     var declarations = [];
     var conditionalCount = 0;
     var result = [];
-    var pack = (i, t) => `void __method__${i}(){${t}}; __method__${i}();`;
+    var pack = (i, t) => `void __method__${i}() {\n${t}}; static int __variable__${i} = __method__${i}();`;
     for (var i = 0; i < statements.length; i++) {
-        var decl = null;
         if (statements[i].search(/^if/) > -1) { //if
             if (statements[i + 1]?.search(/^else/) > -1) {
                 result.push(statements[i]);
@@ -115,7 +117,11 @@ function splitStatements(s) {
                 result.push(result.pop() + statements[i]);
             }
             else {
-                result.push(pack(conditionalCount++, result.pop() + statements[i]));
+                var t = result.pop();
+                if (t && t.startsWith('try'))
+                    result.push(pack(conditionalCount++, t + statements[i]));
+                else
+                    result.push(t + statements[i]);
             }
         }
         else if (statements[i].search(/^for[ ]?\(/) > -1 || statements[i].search(/^while[ ]?\(/) > -1 || statements[i].search(/do[ ]?\{/) > -1) {
@@ -124,105 +130,38 @@ function splitStatements(s) {
         else
             result.push(statements[i]);
     }
-    // function treatDangledElse(s: ReturnType<typeof splitStatements>["statements"]) {
-    //     var result: typeof s = []
-    //     for (var i = 0; i < s.length; i++) {
-    //         if (s[i].search(/^if/) > -1) {
-    //             if (s[i + 1]?.search(/^else/) > -1) {
-    //                 result.push(s[i])
-    //             }
-    //             else {
-    //                 result.push(`void __method__${conditionalCount++}(){${s[i]}}`)
-    //             }
-    //         } if (s[i].search(/^else/) > -1) {
-    //             if (s[i + 1]?.search(/^else/) > -1) {
-    //                 result.push(result.pop() + s[i])
-    //             }
-    //             else {
-    //                 result.push(`void __method__${conditionalCount++}(){${result.pop() + s[i]}}`)
-    //             }
-    //         }
-    //         for (var i = 0; i < s.length; i++) {
-    //             if (s[i].search(/^else/) > -1) {
-    //                 result.push(result.pop() + s[i])
-    //             }
-    //             else result.push(s[i])
-    //         }
-    //         for (var i = 0; i < result.length; i++) {
-    //             if (result[i].search(/^if/) > -1) {
-    //                 result[i] = `void __method__${conditionalCount++}(){${statements[i]}}`
-    //             }
-    //             else result.push(s[i])
-    //         }
-    //         return result
-    //     }
     return { conditionalCount, statements: result, declarations };
 }
 exports.splitStatements = splitStatements;
-// function extractinit(s) {
-//     if (!s.endsWith(';')) return null;
-//     else {
-//         var feq = undefined;
-//         var stack = []
-//         var braces = "(){}[]";
-//         for (var i = 0; i < s.length; i++) {
-//             if (stack.length == 0 && s[i] == '=') {
-//                 feq = i;
-//                 break
-//             }
-//             else {
-//                 var sym = braces.indexOf(s[i]);
-//                 if (sym == -1) continue;
-//                 else if (sym % 2 == 0) {//means open braces
-//                     stack.push(s[i])
-//                 }
-//                 else {
-//                     var pairsym = braces.indexOf(stack.pop());
-//                     if (sym - pairsym !== 1) throw "bracket mismatch at " + i;
-//                     else if (s[i] == "}" && stack.length == 0) lastcurleddat = i;
-//                 }
-//             }
-//         }
-//         //if(stack.length!=0)throw "bracket mismatch at "+i;
-//         if (i == s.length) return null
-//         else {
-//             var name = s.slice(0, feq).split(" ").pop()//or use regex
-//             return { name, def: s.slice(feq + 1) }
-//         }
-//     }
-//     return feq
-// }
-function parseDeclaration(s) {
-    var indexOfEq = s.length;
+function getDeclaration(s) {
+    if (s.search(/^(class|struct|typedef|if|try|for|while|do|switch|extern)/) == 0)
+        return s;
     var stack = [];
-    var braces = "(){}[]";
+    var braces = "(){}[]<>";
+    var suredecl = 0;
     for (var i = 0; i < s.length; i++) {
-        if (stack.length == 0 && s[i] == '=' && s[i - 1] == " " && s[i + 1] == " ") {
-            indexOfEq = i;
-            break;
+        if (stack.length == 0) {
+            if (s[i] == " ")
+                if (++suredecl == 2)
+                    if (s[i + 1] == "=" || s[i + 1] == '{' || s[i + 1] == ';')
+                        return "extern " + s.slice(0, i) + ";";
+                    else
+                        return "";
         }
-        else {
-            var matchedAt = braces.indexOf(s[i]);
-            if (matchedAt == -1)
-                continue;
-            else if (matchedAt % 2 == 0) { //means open braces
-                stack.push(s[i]);
-            }
-            else if (stack.length > 0) { //or closing bracket
-                var pairsym = braces.indexOf(stack.pop());
-                if (matchedAt - pairsym !== 1)
-                    throw "bracket mismatch at " + i;
-            }
-            else
-                throw "inconsitancy in bracket pairs at " + i;
+        var matchedAt = braces.indexOf(s[i]);
+        if (matchedAt == -1)
+            continue;
+        else if (matchedAt % 2 == 0) { //means open braces
+            stack.push(s[i]);
         }
+        else if (stack.length > 0) { //or closing bracket
+            var pairsym = braces.indexOf(stack.pop());
+            if (matchedAt - pairsym !== 1)
+                throw "bracket mismatch at " + i;
+        }
+        else
+            throw "inconsitancy in bracket pairs at " + i;
     }
-    if (i == s.length)
-        return null;
-    else {
-        var declaration = s.slice(0, indexOfEq).trim();
-        var name = declaration.split(" ").pop(); //or use regex
-        return { name, value: s.slice(indexOfEq + 1).trim(), declaration };
-    }
+    return stack.length == 0 ? "extern " + s.slice(0, i) : "";
 }
 //# sourceMappingURL=preprocess.js.map
