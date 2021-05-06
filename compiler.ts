@@ -1,103 +1,135 @@
-import { PromiseValue } from "type-fest"
-import * as tmp from "tmp"
-import * as path from "path"
-import * as fs from 'fs'
-import { createHash } from "crypto"
+import tmp from "tmp"
+import fs from "fs"
 import e from "execa"
-const tmpdir = tmp.dirSync();
-const md5sum = createHash('md5')
-interface Flavoring<FlavorT> {
-  _type?: FlavorT;
-}
-export type Nominal<T, FlavorT> = T & Flavoring<FlavorT>;
-/**
- * C Expression text i.e no decalration allowed
- */
-export type cExpression = Nominal<string, "cExpression">
-/**
- * Valid C program Soruce Code
- */
-export type sourceCode = Nominal<string, "sourceCode">
+import path from "path"
+/**************************************************************************** */
+import { PromiseValue } from "type-fest";
+
 export interface sFile extends PromiseValue<ReturnType<typeof makeSourceFile>> { }
+export interface cppsFile extends PromiseValue<ReturnType<typeof makeCppFile>> { }
+export interface cppsFileProcessed extends PromiseValue<ReturnType<typeof makeCppFile>> { }
+export interface headerFile extends PromiseValue<ReturnType<typeof makeHeaderFile>> { }
 export interface oFile extends PromiseValue<ReturnType<typeof makeObjectFile>> { }
 export interface soFile extends PromiseValue<ReturnType<typeof makeSharedObject>> { }
 export interface aFile extends PromiseValue<ReturnType<typeof makeExecObject>> { }
-const uoptions = ["-fno-eliminate-unused-debug-types", "-g3", "-O0", "-rdynamic"]
-export async function makeSourceFile(textSrc: sourceCode, extension = "c") {
-  var file = tmp.fileSync({ dir: tmpdir.name, postfix: `.${extension}` });
+/******************************************************************************/
+import { createHash } from "crypto"
+const md5sum = createHash('md5')
+const tmpdir = tmp.dirSync();
+function getname(filenames: string[] | string) {
+  if (typeof filenames == 'string') return path.join(tmpdir.name, filenames)
+  return path.join(tmpdir.name, md5sum.copy().update(filenames.sort().join("")).digest('hex'))
+}
+
+/******************************************************************************/
+
+const options = ["-fno-eliminate-unused-debug-types", "-g3", "-O0", "-rdynamic"]
+
+/******************************************************************************/
+export async function makeSourceFile<T extends string>(textSrc: string, ext: T) {
+  var file = tmp.fileSync({ dir: tmpdir.name, postfix: `.${ext}` });
   fs.writeFileSync(file.fd, textSrc);
   return {
-    id: file.name.split(".")[0],
-    extension,
+    fd: file.fd,
     name: file.name,
-    type: "sfile" as "sfile",
-    src: textSrc,
-    time: Date.now()
+    ext,
+    type: "sfile" as "sfile"
   };
 }
-export async function makeObjectFile(sfile: sFile, extension = "o") {
-  var filename = sfile.id + `.${extension}`;
+export async function makeCppFile(textSrc: string = "") {
+  return makeSourceFile(textSrc, 'cpp')
+}
+export async function makeCppFilepp(textSrc: string = "") {
+  return makeSourceFile(textSrc, 'i')
+}
+export async function makeHeaderFile(textSrc: string = "") {
+  return makeSourceFile(textSrc, 'h')
+}
+/******************************************************************************/
+
+export async function makeObjectFile(sfiles: sFile | sFile[]) {
+  var name;
+  if (!(sfiles instanceof Array)) {
+    name = path.basename(sfiles.name).split(".")[0]
+    sfiles = [sfiles]
+  }
+
+  var filename = getname(name || sfiles.map((s: { name: string }) => s.name)) + `.o`;
   var gccCompileOptions = [
     "-w",
     "-Wall",
     "-fPIC",
     "-c",
-    ...uoptions,
-    sfile.name,
+    ...options,
+    ...sfiles.map((s: { name: string }) => s.name),
     "-o",
     filename
   ];
   var out = await e("g++", gccCompileOptions);
   if (out.stderr) throw out.stderr
   return {
-    id: sfile.id,
-    extension,
+    ext: 'o',
     name: filename,
-    src: sfile,
+    src: sfiles,
     type: "ofile" as "ofile",
-    _gcc_result: out,
-    time: sfile.time
+    _gcc_result: out
   };
 }
-export async function makeSharedObject(ofile: oFile, extension = "so") {
-  var filename = ofile.id + `.${extension}`;
-  var gccLinkerOptions = ["-w", "-shared", ...uoptions, ofile.name, "-o", filename, "-ldl"];
+
+/******************************************************************************/
+export async function makeSharedObject(files: oFile | oFile[], libs: string[] = []) {
+  var name = ""
+  if (!(files instanceof Array)) {
+    name = path.basename(files.name).split(".")[0]
+    files = [files]
+  }
+  var filename = getname(name || files.map((s: { name: string }) => s.name)) + `.so`;
+  var gccLinkerOptions = ["-w", "-shared", ...options, ...files.map((s: { name: string }) => s.name), "-o", filename, ...libs];
   var out = await e("g++", gccLinkerOptions);
   if (out.stderr) throw out.stderr
   return {
-    id: ofile.id,
-    extension,
     name: filename,
-    src: ofile,
+    ext: 'so',
+    src: files,
     type: "sofile" as "sofile",
-    _gcc_result: out,
-    time: ofile.time
+    _gcc_result: out
   };
 }
-export async function codetoo(textSrc: sourceCode, pp = true) {
-  var s = await makeSourceFile(textSrc, pp ? "c" : "i")
-  return makeObjectFile(s)
-}
-export async function codetoso(textSrc: sourceCode, pp = true) {
-
-  var o = await codetoo(textSrc, pp)
-  var so = await makeSharedObject(o)
-  return so
-}
-export async function makeExecObject(files: (soFile | oFile)[], moreoptions: string[] = [], extension = "a") {
-  var filenames = files.map(file => path.basename(file.name)).sort()
-  var hash = md5sum.copy().update(filenames.join("")).digest('hex')
-  var filename = path.join(tmpdir.name, hash + `.${extension}`);
-  var gccLinkerOptions = [`-Wl,-rpath=${tmpdir.name}`, ...uoptions, "-o", path.basename(filename)].concat(filenames).concat(moreoptions);
+/******************************************************************************/
+export async function makeExecObject(files: (soFile | oFile) | ((soFile | oFile)[]), libs: string[] = []) {
+  var name;
+  if (!(files instanceof Array)) {
+    name = path.basename(files.name).split(".")[0]
+    files = [files]
+  }
+  var filename = getname(name || files.map((s: { name: string }) => s.name)) + `.a`;
+  var gccLinkerOptions = [`-Wl,-rpath=${tmpdir.name}`, ...options, "-o", path.basename(filename), ...files.map((s: { name: string }) => s.name), ...libs]
   var out = await e("g++", gccLinkerOptions, { cwd: tmpdir.name, env: { LD_LIBRARY_PATH: tmpdir.name } });
   if (out.stderr) throw out.stderr
   return {
-    id: hash,
-    extension,
+    ext: 'a',
     name: filename,
     src: files,
     type: "afile" as "afile",
-    _gcc_result: out,
-    time: Date.now()
+    _gcc_result: out
   };
+}
+/******************************************************************************* */
+
+export enum filetypes { "ofile", "sofile", "afile" }
+export async function compile(code: sFile | oFile | soFile | aFile, target: filetypes.ofile, libs?: string[]): Promise<oFile>
+export async function compile(code: sFile | oFile | soFile | aFile, target: filetypes.sofile, libs?: string[]): Promise<soFile>
+export async function compile(code: sFile | oFile | soFile | aFile, target: filetypes.afile, libs?: string[]): Promise<aFile>
+export async function compile(code: sFile | oFile | soFile | aFile, target: filetypes = 2, libs: string[] = []) {
+
+  if (target >= filetypes.ofile && code.type == "sfile") {
+    code = await makeObjectFile(code)
+  }
+  if (target == filetypes.sofile && code.type == "ofile") {
+    code = await makeSharedObject(code, libs)
+  }
+  if (target >= filetypes.afile && (code.type == "sofile" || code.type == "ofile")) {
+    code = await makeExecObject(code, libs)
+  }
+  return code
 }

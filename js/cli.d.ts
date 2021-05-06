@@ -1,6 +1,6 @@
 import { TalkToGdb } from "talk-to-gdb";
 import { EventEmitterExtended } from "listen-for-patterns";
-import { cExpression, sourceCode, soFile, aFile, Nominal, oFile, sFile } from "./compiler";
+import { cExpression, sourceCode, soFile, aFile, Nominal, oFile } from "./compiler";
 declare type CompilationSource = sourceCode | {
     text: string;
     lib?: string[];
@@ -18,31 +18,7 @@ export declare class CRepl extends EventEmitterExtended {
     private defaultBaseCode;
     private init;
     constructor(file?: baseFile);
-    compile(code: CompilationSource, pp?: boolean, target?: (aFile | oFile | soFile)["type"]): Promise<{
-        id: string;
-        extension: string;
-        name: string;
-        src: sFile;
-        type: "ofile";
-        _gcc_result: import("execa").ExecaReturnValue<string>;
-        time: number;
-    } | {
-        id: string;
-        extension: string;
-        name: string;
-        src: oFile;
-        type: "sofile";
-        _gcc_result: import("execa").ExecaReturnValue<string>;
-        time: number;
-    } | {
-        id: string;
-        extension: string;
-        name: string;
-        src: (oFile | soFile)[];
-        type: "afile";
-        _gcc_result: import("execa").ExecaReturnValue<string>;
-        time: number;
-    }>;
+    compile(code: CompilationSource, pp?: boolean, target?: (aFile | oFile | soFile)["type"]): Promise<any>;
     loadso(file: path): Promise<Object>;
     evaluate(code: cExpression, command: string, get: "output"): Promise<AsyncIterable<Object>>;
     evaluate(code: cExpression, command: string, get: "resultonly"): Promise<Object>;

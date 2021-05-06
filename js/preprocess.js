@@ -5,13 +5,11 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.splitStatements = exports.pretty = exports.cpp = exports.preProcess = void 0;
 const execa_1 = __importDefault(require("execa"));
+// import { string } from "./compiler";
 async function preProcess(code) {
     return (await splitStatements(await cpp(await pretty(code)))).statements.join('\n');
 }
 exports.preProcess = preProcess;
-// export async getMacros()
-// {
-// }
 async function cpp(code) {
     var e = execa_1.default("cpp", ["-P"]);
     await e.stdin?.write(code);
@@ -26,7 +24,9 @@ async function pretty(code) {
     return (await e).stdout;
 }
 exports.pretty = pretty;
-function splitStatements(s) {
+async function splitStatements(s, preproccesd = true) {
+    if (!preproccesd)
+        s = await cpp(s);
     var stack = [];
     var statements = [];
     var finishedtill = 0;

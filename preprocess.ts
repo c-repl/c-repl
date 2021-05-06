@@ -1,22 +1,23 @@
 import execa from "execa";
 import { Nominal } from "talk-to-gdb";
-import { sourceCode } from "./compiler";
-export async function preProcess(code: sourceCode) {
+// import { string } from "./compiler";
+export async function preProcess(code: string) {
     return (await splitStatements(await cpp(await pretty(code)))).statements.join('\n')
 }
-export async function cpp(code: sourceCode) {
+export async function cpp(code: string) {
     var e = execa("cpp", ["-P"])
     await e.stdin?.write(code)
     await e.stdin?.end();
     return (await e).stdout
 }
-export async function pretty(code: sourceCode) {
+export async function pretty(code: string) {
     var e = execa("clang-format")
     await e.stdin?.write(code)
     await e.stdin?.end();
     return (await e).stdout
 }
-export async function splitStatements(s: sourceCode, preproccesd = true) {
+export async function splitStatements(s: string, preproccesd = true) {
+
     if (!preproccesd) s = await cpp(s)
     var stack: string[] = [];
     var statements: string[] = [];
