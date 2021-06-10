@@ -1,9 +1,10 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.evaluate = exports.CRepl = void 0;
-const talk_to_gdb_1 = require("talk-to-gdb");
+exports.evaluate = exports.CRepl = exports.GdbParser = void 0;
 const listen_for_patterns_1 = require("listen-for-patterns");
-const compiler_1 = require("./compiler");
+const preprocess_1 = require("./preprocess");
+const gdb_parser_extended_1 = require("gdb-parser-extended");
+Object.defineProperty(exports, "GdbParser", { enumerable: true, get: function () { return gdb_parser_extended_1.GdbParser; } });
 class CRepl extends listen_for_patterns_1.EventEmitterExtended {
     constructor(file) {
         super();
@@ -21,42 +22,43 @@ class CRepl extends listen_for_patterns_1.EventEmitterExtended {
     }
     async init() {
         try {
-            if ("type" in this.#file) {
-                if (this.#file.type == 'ofile')
-                    this.#file = await compiler_1.makeExecObject([this.#file]);
-            }
-            else if (typeof this.#file == 'string') {
-                this.#file = await compiler_1.makeExecObject([await compiler_1.codetoo(this.#file)]);
-            }
-            else if ("text" in this.#file) {
-                this.#file = await compiler_1.makeExecObject([await compiler_1.codetoo(this.#file.text)], this.#file.lib);
-            }
-            else
-                throw "Illegal base file";
-            this.primary = new talk_to_gdb_1.TalkToGdb({ target: this.#file.name });
-            await this.primary.write("1-break-insert main\n");
-            await this.primary.write("1-exec-run\n");
-            this.primary.once({ token: "1" }, (data) => {
-                console.log(data.token, data);
-            });
-            this.secondary = new talk_to_gdb_1.TalkToGdb();
-            this.initialized = true;
         }
         catch (e) {
-            throw { e, message: "Error in initializing Cli" };
         }
+        // try {
+        //     if ("type" in this.#file) {
+        //         if (this.#file.type == 'ofile') this.#file = await makeExecObject([this.#file])
+        //     }
+        //     else if (typeof this.#file == 'string') {
+        //         this.#file = await makeExecObject([await codetoo(this.#file)])
+        //     }
+        //     else if ("text" in this.#file) {
+        //         this.#file = await makeExecObject([await codetoo(this.#file.text)], this.#file.lib)
+        //     } else throw "Illegal base file"
+        //     this.primary = new TalktoGdb({ target: this.#file.name });
+        //     await this.primary.write("1-break-insert main\n");
+        //     await this.primary.write("1-exec-run\n");
+        //     this.primary.once({ token: "1" }, (data) => {
+        //         console.log(data.token, data)
+        //     })
+        //     this.secondary = new TalktoGdb()
+        //     this.initialized = true
+        // }
+        // catch (e) {
+        //     throw { e, message: "Error in initializing Cli" }
+        // }
     }
-    async compile(code, target = "afile") {
+    async compile(code, pp = false, target = "afile") {
         if (typeof code != 'string') {
             var lib = "lib" in code ? code.lib : [];
             code = "text" in code ? code.text : code;
         }
         if (target == 'ofile')
-            return compiler_1.codetoo(code);
+            return codetoo(code, pp);
         else if (target == 'sofile')
-            return compiler_1.codetoso(code);
+            return codetoso(code, pp);
         else if (target == 'afile')
-            return compiler_1.makeExecObject([await compiler_1.codetoo(code)], lib);
+            return makeExecObject([await codetoo(code, pp)], lib);
         else
             throw "illegal compilation target";
     }
@@ -77,6 +79,11 @@ class CRepl extends listen_for_patterns_1.EventEmitterExtended {
     }
     getAttrib(file) {
     }
+    async evaluateCommand(arg, ...args) {
+        var token = await this.primary?.command(arg, ...args);
+        if (typeof token == "number")
+            return this.primary?.readPattern({ token, type: 'sequence' });
+    }
     async run(code) {
         /**
          * @mermaid Operating Sequence Diagram
@@ -93,7 +100,7 @@ class CRepl extends listen_for_patterns_1.EventEmitterExtended {
         if (code.search(";") == -1)
             return this.evaluate(code);
         else {
-            var so = await this.compile(code, "sofile");
+            var so = await this.compile(await preprocess_1.preProcess(code), false, "sofile");
             return this.loadso(so.name);
         }
     }

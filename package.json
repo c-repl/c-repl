@@ -11,14 +11,19 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@types/node": "^14.11.2",
     "@types/tmp": "^0.2.0",
+    "cpp-meta-data": "git+ssh://git@github.com/yniks/cpp-meta-data.git",
     "execa": "^4.0.3",
+    "gdb-parser-extended": "git+ssh://git@github.com/yniks/gdb-parser-extended.git",
     "talk-to-gdb": "git+ssh://git@github.com/yniks/talk-to-gdb.git",
-    "tmp": "^0.2.1"
+    "tmp": "^0.2.1",
+    "typedoc": "^0.11.1",
+    "typescript": "^4.2.4",
+    "util-promisifyall": "^1.0.6"
   },
   "devDependencies": {
-    "nodemon": "^2.0.4",
+    "@types/node": "^14.14.0",
+    "nodemon": "^2.0.6",
     "type-fest": "^0.16.0",
     "typedoc-plugin-mermaid": "^1.3.0"
   }
