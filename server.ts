@@ -5,7 +5,6 @@ var session = require('express-session')
 var r=require('./commandline').default
 var cors = require('cors')
 async function main(){
-    await cli.init()
     const app=express()
     app.set('trust proxy', 1) // trust first proxy
     app.use(session({
