@@ -17,8 +17,12 @@ async function main(){
     app.use(cors())
     app.use(express.json())
     app.post('/run',async function(req,res,next){
-        if (!('cli' in express.session))
-            express.session.cli=new r
+        if (!('cli' in req.session))
+        { req.session.cli=new r;
+            await req.session.cli.init()
+            console.log('new initialized')
+        }
+        else console.log('old session')
         next()
 
     },async function(req,res,next)
