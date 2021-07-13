@@ -11,7 +11,7 @@ async function main(){
       secret: 'keyboard cat',
       resave: false,
       saveUninitialized: false,
-      cookie: { secure: true }
+      cookie: { secure: false }
     }))
     app.use(cors())
     app.use(express.json())
