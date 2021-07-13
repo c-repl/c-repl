@@ -19,6 +19,7 @@
     "cpp-meta-data": "github:yniks/cpp-meta-data",
     "execa": "^4.0.3",
     "express": "^4.17.1",
+    "express-session": "^1.17.2",
     "gdb-parser-extended": "git+ssh://git@github.com/yniks/gdb-parser-extended.git",
     "talk-to-gdb": "git+ssh://git@github.com/yniks/talk-to-gdb.git",
     "tmp": "^0.2.1",
