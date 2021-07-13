@@ -2,6 +2,12 @@
 
 Root module for C-repl
 
+## CLI usage
+```
+$   npm run repl
+c++ > |
+```
+
 ## Dependecy chart
 ```bash
 First Party Dependency
