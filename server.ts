@@ -27,9 +27,11 @@ async function main(){
 
     },async function(req,res,next)
     {
-        var code=req.body.code?.trim();
+        var code=req.body.code?.trim();    
+        console.log('code',code)
         try{
             var result=await req.session.cli.run(code)
+            console.log('result',result)
             res.json(result||{class:'done'})
         }
         catch(e)
