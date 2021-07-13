@@ -3,11 +3,15 @@
 Root module for C-repl
 
 ## CLI usage
-```
+```bash
 $   npm run repl
 c++ > |
 ```
-
+## Web Cli usage
+```bash
+$ npm run server
+# goto http://<server-domain/ip>:8000
+```
 ## Dependecy chart
 ```bash
 First Party Dependency
