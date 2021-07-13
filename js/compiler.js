@@ -10,6 +10,7 @@ const execa_1 = __importDefault(require("execa"));
 const path_1 = __importDefault(require("path"));
 /******************************************************************************/
 const crypto_1 = require("crypto");
+const cpp_meta_data_1 = require("cpp-meta-data");
 const md5sum = crypto_1.createHash('md5');
 const tmpdir = tmp_1.default.dirSync();
 function getname(filenames) {
@@ -32,6 +33,8 @@ async function makeSourceFile(textSrc, ext) {
 }
 exports.makeSourceFile = makeSourceFile;
 async function makeCppFile(textSrc = "") {
+    textSrc = await cpp_meta_data_1.pretty(textSrc);
+    textSrc = cpp_meta_data_1.fixWrapping(textSrc).join("\n");
     return makeSourceFile(textSrc, 'cpp');
 }
 exports.makeCppFile = makeCppFile;

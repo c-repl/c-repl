@@ -44,7 +44,7 @@ class Runner extends listen_for_patterns_1.EventEmitterExtended {
         if (!libs.length && code.search(";") == -1)
             return this.evaluate(code);
         else {
-            return await this.compile(code, libs);
+            return this.compile(code, libs);
         }
     }
 }

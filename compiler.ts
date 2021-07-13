@@ -14,6 +14,7 @@ export interface soFile extends PromiseValue<ReturnType<typeof makeSharedObject>
 export interface aFile extends PromiseValue<ReturnType<typeof makeExecObject>> { }
 /******************************************************************************/
 import { createHash } from "crypto"
+import { fixWrapping, pretty } from "cpp-meta-data";
 const md5sum = createHash('md5')
 const tmpdir = tmp.dirSync();
 function getname(filenames: string[] | string) {
@@ -37,6 +38,8 @@ export async function makeSourceFile<T extends string>(textSrc: string, ext: T) 
   };
 }
 export async function makeCppFile(textSrc: string = "") {
+  textSrc=await pretty(textSrc);
+  textSrc= fixWrapping(textSrc).join("\n")
   return makeSourceFile(textSrc, 'cpp')
 }
 export async function makeCppFilepp(textSrc: string = "") {

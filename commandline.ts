@@ -39,7 +39,7 @@ export default class Runner extends EventEmitterExtended {
     async run(code: string, libs: string[] = []) {
         if (!libs.length && code.search(";") == -1) return this.evaluate(code)
         else {
-            return await this.compile(code, libs);
+            return  this.compile(code, libs);
         }
     }
 }
