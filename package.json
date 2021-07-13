@@ -8,7 +8,7 @@
     "repl": "node ./js/repl.js",
     "server": "node ./js/server.js",
     "docify": "typedoc --out docs  --theme node_modules/typedoc-clarity-theme/bin",
-    "postinstall": "sudo apt update;sudo apt install clang-format; sudo apt install gdb -y"
+    "postinstall": "sudo apt update;sudo apt install clang-format; sudo apt install gdb -y; npx tsc"
   },
   "author": "",
   "license": "ISC",
