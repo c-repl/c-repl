@@ -4,6 +4,6 @@ export declare function pretty(code: string): Promise<string>;
 export declare function splitStatements(s: string, preproccesd?: boolean): Promise<{
     conditionalCount: number;
     statements: string[];
-    declarations: string[];
+    declarations: any[];
 }>;
 //# sourceMappingURL=preprocess.d.ts.map

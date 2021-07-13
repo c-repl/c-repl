@@ -23,8 +23,12 @@ function getobj(s) {
     // else console.error("should never be here")
 }
 class Program {
+    file;
+    gdb;
+    headers;
+    info;
+    running = false;
     constructor({ gdb, file }) {
-        this.running = false;
         this.gdb = gdb;
         this.file = file;
         this.info = [];

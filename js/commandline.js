@@ -8,6 +8,12 @@ const listen_for_patterns_1 = require("listen-for-patterns");
 const program_1 = __importDefault(require("./program"));
 const compiler_1 = require("./compiler");
 class Runner extends listen_for_patterns_1.EventEmitterExtended {
+    program;
+    gdb;
+    initialized;
+    baseFile() {
+        return compiler_1.makeCppFile(`#include<stdio.h>\n#include<dlfcn.h>\nint main(){;printf("Exiting!%d",dlopen);};int dtata(){\n};int hy=90;\nchar tr;\nstruct hua{int h;\n};int tada(){}`);
+    }
     constructor(file) {
         super();
         this.gdb = new talk_to_gdb_1.TalktoGdb();
@@ -16,9 +22,6 @@ class Runner extends listen_for_patterns_1.EventEmitterExtended {
             file: new Promise(async (res) => res(compiler_1.compile(file || await this.baseFile(), compiler_1.filetypes.afile, ["-ldl"])))
         });
         this.initialized = false;
-    }
-    baseFile() {
-        return compiler_1.makeCppFile(`#include<stdio.h>\n#include<dlfcn.h>\nint main(){;printf("Exiting!%d",dlopen);};int dtata(){\n};int hy=90;\nchar tr;\nstruct hua{int h;\n};int tada(){}`);
     }
     async init() {
         try {

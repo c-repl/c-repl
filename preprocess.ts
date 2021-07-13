@@ -115,7 +115,7 @@ export async function splitStatements(s: string, preproccesd = true) {
     }
     return { conditionalCount, statements: result, declarations }
 }
-function getDeclaration(s: Nominal<string, "declaration+assignment">) {
+function getDeclaration(s: string) {
     if (s.search(/^(class|struct|typedef|if|try|for|while|do|switch|extern)/) == 0) return s;
 
     var stack: string[] = []
