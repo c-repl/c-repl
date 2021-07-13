@@ -1,5 +1,4 @@
 import execa from "execa";
-import { Nominal } from "talk-to-gdb";
 // import { string } from "./compiler";
 export async function preProcess(code: string) {
     return (await splitStatements(await cpp(await pretty(code)))).statements.join('\n')
