@@ -1,5 +1,6 @@
 // @ts-nocheck
 const express =require('express')
+const sessions=new Map;
 const repl = require('repl');
 var session = require('express-session')
 var r=require('./commandline').default
@@ -18,8 +19,12 @@ async function main(){
     app.post('/run',async function(req,res,next){
         console.log(req.session)
         if (!('cli' in req.session))
-        { req.session.cli=new r;
-            await req.session.cli.init()
+        { 
+            var id=Math.random()
+            req.session.cli=id;
+            var cli=new r;
+            await cli.init()
+            sessions.set(id,cli)
             console.log('new initialized')
         }
         else console.log('old session')
@@ -28,9 +33,9 @@ async function main(){
     },async function(req,res,next)
     {
         var code=req.body.code?.trim();    
-        console.log('code',code)
+        console.log('code',code,sessions.get(req.session.cli).run)
         try{
-            var result=await req.session.cli.run(code)
+            var result=await sessions.get(req.session.cli).run(code)
             console.log('result',result)
             res.json(result||{class:'done'})
         }
