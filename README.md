@@ -1,3 +1,34 @@
+# C-Repl
+
+Root module for C-repl
+
+## Dependecy chart
+```bash
+First Party Dependency
+c-rpl@1.0.0 ~/c-repl (https://github.com/c-repl/c-repl)
+├── talk-to-gdb@1.0.0 (https://github.com/yniks/talk-to-gdb.git)
+├── cpp-meta-data@1.0.0 (https://github.com/yniks/cpp-meta-data.git)
+└── gdb-parser-extended@1.0.0 (https://github.com/yniks/gdb-parser-extended.git)
+ 
+Other Dependency
+c-rpl@1.0.0 ~/c-repl  (https://github.com/c-repl/c-repl)
+├── @types/node@14.14.0
+├── @types/tmp@0.2.0
+├── chalk@3.0.0
+├── cors@2.8.5
+├── execa@4.0.3
+├── express@4.17.1
+├── nodemon@2.0.6
+├── tmp@0.2.1
+├── type-fest@0.16.0
+├── typedoc-plugin-mermaid@1.3.0
+├── typedoc@0.11.1
+├── typescript@4.2.4
+└── util-promisifyall@1.0.6
+
+```
+
+## DEMO CODE
 ```javascript
 var r=require('./js/commandline').default
 
