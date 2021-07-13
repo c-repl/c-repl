@@ -16,6 +16,7 @@ async function main(){
     app.use(cors())
     app.use(express.json())
     app.post('/run',async function(req,res,next){
+        console.log(req.session)
         if (!('cli' in req.session))
         { req.session.cli=new r;
             await req.session.cli.init()
