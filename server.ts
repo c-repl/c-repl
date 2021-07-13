@@ -37,6 +37,7 @@ async function main(){
         catch(e)
         {
             res.json(e)
+            console.error(e)
         }
         // .catch((r)=>res.json(r)).then((r)=>res.json(r));
     } )
